@@ -1,143 +1,154 @@
-OSINT Web Scraping Engine
-A high-performance, distributed web scraping engine specifically designed for OSINT (Open Source Intelligence) and cybersecurity applications. Built in Go, this engine provides advanced anti-detection capabilities, distributed architecture, and comprehensive data extraction features.
+Huginn is a next-generation OSINT (Open Source Intelligence) web scraping platform that combines the performance of Go, the security of Rust, and the AI capabilities of Python into a unified, distributed system designed for large-scale intelligence operations.
 
-Features
-Core Engine Features
-Concurrent Web Scraping: Efficient web scraping using Go's goroutines and channels
+🏗️ Architecture
+Huginn employs a multi-language microservices architecture:
 
-Anti-Detection Mechanisms: Browser fingerprint management, proxy rotation, and user agent rotation
+Go Engine: High-performance core scraping engine with distributed worker pools
 
-Rate Limiting: Configurable rate limiting to avoid IP blocks
+Rust Security: Advanced anti-detection, browser fingerprinting, and TLS management
 
-Distributed Architecture: Scalable worker architecture for high-volume scraping
+Python AI: Natural language processing, threat intelligence, and machine learning analysis
 
-Job Queue System: Redis-based priority queue with retry mechanism
-
-Advanced Features
-Multiple Target Types: Email extraction, subdomain discovery, social media profiling, and general data collection
-
-Campaign Management: Create and manage campaigns with multiple targets
-
-Proxy Management: Automatic proxy rotation, health checking, and proxy pool management
-
-Data Validation: Comprehensive data validation and normalization
-
-API Integration: RESTful API for job management and result retrieval
-
-Monitoring & Statistics: Real-time statistics and monitoring
-
-Architecture
-The OSINT Engine follows a distributed microservices architecture with several key components:
-
-Core Engine: Manages web scraping, anti-detection, and data extraction
-
-Worker Pool: Handles concurrent job processing with auto-scaling capability
-
-Job Queue: Redis-based priority queue system with retry mechanism
-
-Proxy Manager: Handles proxy rotation, testing, and health monitoring
-
-API Layer: RESTful API for interacting with the system
-
-Configuration: YAML-based configuration with environment variable support
-
-Architecture Diagram
+📁 Repository Structure
 text
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │     │                 │
-│    API Server   │◄────┤  Redis Queue    │◄────┤  Worker Nodes   │
-│                 │     │                 │     │                 │
-└────────┬────────┘     └─────────────────┘     └────────▲────────┘
-         │                                               │
-         │                                               │
-         │                                               │
-┌────────▼────────┐                            ┌─────────┴───────┐
-│                 │                            │                 │
-│  Target Store   │                            │  Result Store   │
-│                 │                            │                 │
-└─────────────────┘                            └─────────────────┘
-Components
-Engine (cmd/osint-engine)
-The main application that runs both the scraping engine and workers. It manages the worker pool, job distribution, and result collection.
+huginn/
+├── services/           # Service implementations
+│   ├── go-engine/     # Go scraping engine
+│   ├── rust-security/ # Rust security modules
+│   └── python-ai/     # Python AI/ML services
+├── k8s/               # Kubernetes deployments
+├── docker/            # Docker configurations
+├── scripts/           # Build and deployment scripts
+├── docs/              # Documentation
+└── docker-compose*.yml # Development/production environments
+🚀 Quick Start
+Development Environment
+Clone the repository:
 
-Worker (cmd/osint-worker)
-Standalone worker application that can be deployed separately to distribute the workload. Workers pull jobs from the queue, process them, and push results back.
+bash
+git clone https://github.com/yourusername/huginn.git
+cd huginn
+Start with Docker Compose:
 
-API (cmd/osint-api)
-RESTful API server that provides endpoints for job management, result retrieval, and system monitoring.
+bash
+docker-compose up -d
+Verify services are running:
 
-Configuration
-The system is configured through a YAML file (config.yaml). Key configuration sections include:
+bash
+docker-compose ps
+Production Deployment
+Kubernetes deployment:
 
-server: Server configuration (host, port, timeouts)
+bash
+./scripts/deploy-platform.sh production
+Or use individual scripts:
 
-redis: Redis connection settings
-
-scraper: Scraping settings (concurrency, rate limits, anti-detection)
-
-api: API server settings (rate limits, authentication)
-
-security: Security settings (API keys, compliance mode)
-
-logging: Logging configuration
-
-Getting Started
+bash
+./scripts/build.sh
+./scripts/docker-build.sh
+kubectl apply -f k8s/
+🛠️ Development
 Prerequisites
+Docker & Docker Compose
+
 Go 1.21+
 
-Redis server
+Rust 1.70+
 
-Docker (optional, for containerized deployment)
+Python 3.11+
 
-Kubernetes (optional, for orchestrated deployment)
+Kubernetes (for production)
 
-Building from Source
+Service Development
+Each service can be developed independently:
+
 bash
-# Clone the repository
-git clone https://github.com/rowandark/huginn.git
-cd huginn
+# Go engine
+cd services/go-engine
+go run main.go
 
-# Build the binaries
-./scripts/build.sh
+# Rust security
+cd services/rust-security
+cargo run
 
-# Run the engine
-./bin/huginn -config config.yaml -workers 10
-Docker Deployment
-bash
-# Build Docker images
-./scripts/docker-build.sh
+# Python AI
+cd services/python-ai
+python main.py
+📊 Features
+Advanced Anti-Detection
+Dynamic browser fingerprinting
 
-# Run with Docker Compose
-cd deployment/docker
-docker-compose up -d
-Kubernetes Deployment
-bash
-# Apply Kubernetes manifests
-kubectl apply -f deployment/k8s/deployment.yaml
-API Endpoints
-The API provides the following endpoints:
+TLS signature rotation
 
-/api/v1/health: Health check endpoint
+Proxy pool management
 
-/api/v1/targets: Target management
+Rate limiting and request randomization
 
-/api/v1/jobs: Job management
+AI-Powered Analysis
+Natural language processing
 
-/api/v1/results: Result retrieval
+Threat intelligence correlation
 
-/api/v1/campaigns: Campaign management
+Entity extraction and classification
 
-/api/v1/stats: System statistics
+Campaign attribution
 
-Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+Distributed Architecture
+Horizontal scaling
 
-License
-This project is licensed under the Mozilla Public License Version 2.0 - see the LICENSE file for details.
+Redis-based job queuing
 
-Acknowledgments
+Load balancing
+
+Fault tolerance
+
+🎯 Use Cases
+Threat Intelligence: Automated IOC collection and threat actor attribution
+
+Digital Forensics: Large-scale evidence gathering and analysis
+
+Brand Protection: Monitoring for brand abuse and intellectual property theft
+
+Competitive Intelligence: Market research and competitor analysis
+
+Security Research: Vulnerability research and attack surface mapping
+
+📖 Documentation
+Architecture Overview
+
+API Documentation
+
+Deployment Guide
+
+Service-Specific Guides
+
+🔧 Configuration
+Huginn uses environment variables and YAML configuration files. See config/ directory for examples and templates.
+
+🤝 Contributing
+Fork the repository
+
+Create a feature branch (git checkout -b feature/amazing-feature)
+
+Commit your changes (git commit -m 'Add amazing feature')
+
+Push to the branch (git push origin feature/amazing-feature)
+
+Open a Pull Request
+
+📄 License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+⚠️ Legal Notice
+Huginn is designed for legitimate OSINT and cybersecurity research purposes. Users are responsible for ensuring compliance with applicable laws, terms of service, and ethical guidelines when using this tool.
+
+🙏 Acknowledgments
+Built with industry best practices for distributed systems
+
+Incorporates state-of-the-art anti-detection techniques
+
+Leverages modern AI/ML frameworks for intelligent analysis
 The Go community for excellent concurrency primitives
 
-Colly team for the web scraping framework
 
 Redis for the distributed queue system
