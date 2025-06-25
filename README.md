@@ -94,14 +94,14 @@ Kubernetes (optional, for orchestrated deployment)
 Building from Source
 bash
 # Clone the repository
-git clone https://github.com/your-organization/osint-engine.git
-cd osint-engine
+git clone https://github.com/rowandark/huginn.git
+cd huginn
 
 # Build the binaries
 ./scripts/build.sh
 
 # Run the engine
-./bin/osint-engine -config config.yaml -workers 10
+./bin/huginn -config config.yaml -workers 10
 Docker Deployment
 bash
 # Build Docker images
