@@ -1,0 +1,257 @@
+# Kubernetes Deployment for Go Engine API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-engine-api
+  namespace: osint-platform
+  labels:
+    app: go-engine-api
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: go-engine-api
+  template:
+    metadata:
+      labels:
+        app: go-engine-api
+        version: v1
+    spec:
+      containers:
+      - name: go-engine-api
+        image: osint-platform/go-engine:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: REDIS_URL
+          value: "redis-service:6379"
+        - name: RUST_SECURITY_URL
+          value: "http://rust-security-service:8081"
+        - name: PYTHON_AI_URL
+          value: "http://python-ai-service:8082"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: WORKER_POOL_SIZE
+          value: "20"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      serviceAccountName: osint-platform-sa
+      securityContext:
+        fsGroup: 1000
+
+---
+# Kubernetes Service for Go Engine API
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-engine-api-service
+  namespace: osint-platform
+  labels:
+    app: go-engine-api
+spec:
+  selector:
+    app: go-engine-api
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Horizontal Pod Autoscaler for Go Engine API
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: go-engine-api-hpa
+  namespace: osint-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: go-engine-api
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+
+---
+# Deployment for Go Engine Workers
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-engine-worker
+  namespace: osint-platform
+  labels:
+    app: go-engine-worker
+    version: v1
+spec:
+  replicas: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: go-engine-worker
+  template:
+    metadata:
+      labels:
+        app: go-engine-worker
+        version: v1
+    spec:
+      containers:
+      - name: go-engine-worker
+        image: osint-platform/go-engine:latest
+        command: ["./worker"]
+        env:
+        - name: REDIS_URL
+          value: "redis-service:6379"
+        - name: RUST_SECURITY_URL
+          value: "http://rust-security-service:8081"
+        - name: PYTHON_AI_URL
+          value: "http://python-ai-service:8082"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: CONCURRENT_JOBS
+          value: "10"
+        - name: WORKER_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep worker"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      serviceAccountName: osint-platform-sa
+      securityContext:
+        fsGroup: 1000
+
+---
+# HPA for Go Engine Workers
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: go-engine-worker-hpa
+  namespace: osint-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: go-engine-worker
+  minReplicas: 5
+  maxReplicas: 50
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 85
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 200
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 60
